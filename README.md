@@ -1,4 +1,3 @@
-Here's a detailed `README.md` file for your GitHub repository that outlines what the project does, how to run it locally, and any additional libraries or tools used.
 
 ```markdown
 # KYC Verification Form
