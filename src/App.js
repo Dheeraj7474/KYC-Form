@@ -109,7 +109,7 @@ const App = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100 h-[600px]"> {/* Fixed height */}
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white">
-          <h1 className="text-3xl font-extrabold tracking-tight">KYC Verification</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">KYC Form</h1>
           <p className="text-blue-100 mt-2">Complete your Know Your Customer process</p>
         </div>
         
