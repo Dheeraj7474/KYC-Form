@@ -1,32 +1,83 @@
 import React, { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { ErrorMessage } from '@hookform/error-message';
-
-const countries = [
-  { value: 'USA', label: 'United States' },
-  { value: 'Canada', label: 'Canada' },
-  { value: 'UK', label: 'United Kingdom' },
-  { value: 'AUS', label: 'Australia' },
-  { value: 'DEU', label: 'Germany' },
-];
+import PersonalInfo from './PersonalInfo';
+import AddressInfo from './AddressInfo';
+import DocumentUpload from './DocumentUpload';
+import Summary from './Summary';
 
 const App = () => {
   const [step, setStep] = useState(1);
   const [userData, setUserData] = useState({});
-  const { register, handleSubmit, control, trigger, formState: { errors }, getValues } = useForm({
-    mode: 'onBlur',
-  });
+  const [errors, setErrors] = useState({});
 
-  const handleNextStep = async () => {
-    const result = await trigger();
-    if (result) {
-      const currentStepData = getValues();
-      setUserData((prev) => ({ ...prev, ...currentStepData }));
+  const validateStep1 = (data) => {
+    const newErrors = {};
+    
+    // Full Name Validation
+    if (!data.full_name) {
+      newErrors.full_name = "Full Name is required";
+    } else if (data.full_name.length < 2) {
+      newErrors.full_name = "Name must be at least 2 characters long";
+    } else if (data.full_name.length > 50) {
+      newErrors.full_name = "Name cannot exceed 50 characters";
+    }
+
+    // Email Validation
+    const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+    if (!data.email) {
+      newErrors.email = "Email is required";
+    } else if (!emailRegex.test(data.email)) {
+      newErrors.email = "Invalid email address";
+    }
+
+    return newErrors;
+  };
+
+  const validateStep2 = (data) => {
+    const newErrors = {};
+    
+    // Country Validation
+    if (!data.country) {
+      newErrors.country = "Country is required";
+    }
+
+    // Address Validation
+    if (!data.address) {
+      newErrors.address = "Address is required";
+    } else if (data.address.length < 5) {
+      newErrors.address = "Address must be at least 5 characters long";
+    } else if (data.address.length > 100) {
+      newErrors.address = "Address cannot exceed 100 characters";
+    }
+
+    return newErrors;
+  };
+
+  const handleNextStep = (e) => {
+    e.preventDefault();
+    let currentErrors = {};
+
+    // Validate based on current step
+    if (step === 1) {
+      currentErrors = validateStep1(userData);
+    } else if (step === 2) {
+      currentErrors = validateStep2(userData);
+    } else if (step === 3 && !userData.identity_document) {
+      currentErrors = { identity_document: 'Please attach a file to proceed' };
+    }
+
+    // If there are no errors, proceed to next step
+    if (Object.keys(currentErrors).length === 0) {
+      setErrors({});
+      
+      setStep((prevStep) => prevStep + 1);
+      
+      // Handle special case for document upload step
       if (step === 2 && !userData.identity_document) {
         setStep(3);
-      } else {
-        setStep((prevStep) => prevStep + 1);
       }
+      
+    } else {
+      setErrors(currentErrors);
     }
   };
 
@@ -34,258 +85,78 @@ const App = () => {
     setStep((prevStep) => prevStep - 1);
   };
 
-  const onSubmit = (data) => {
-    const finalData = { ...userData, ...data };
-    console.log('Submitted Data:', finalData);
-    alert('Form Submitted Successfully!');
-  };
-
   const renderProgressBar = () => {
-    const progress = ((step - 1) / 3) * 100;
+    const progress = ((step - 1) / 4) * 100;
     return (
-      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-        <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
+      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6 shadow-inner">
+        <div 
+          className="bg-gradient-to-r from-blue-500 to-purple-600 h-2.5 rounded-full transition-all duration-500 ease-in-out" 
+          style={{ width: `${progress}%` }}
+        ></div>
       </div>
     );
   };
 
   const handleEditUploadsDoc = () => {
-    setUserData((prev) => ({ ...prev, identity_document: '' }));
+    setUserData(prev => ({
+      ...prev,
+      identity_document: ''
+    }));
     setStep(3);
   };
 
   return (
-    <div className="max-w-md mx-auto p-4 mt-8 bg-white rounded shadow">
-      <h1 className="text-2xl font-bold mb-4">KYC Form</h1>
-      {renderProgressBar()}
-      {step === 1 && (
-        <form onSubmit={handleNextStep}>
-          <h2 className="text-lg font-bold mb-4">Step 1: Personal Information</h2>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Full Name</label>
-            <input
-              type="text"
-              className="shadow border rounded w-full py-2 px-3"
-              value={userData.full_name || ''}
-              onChange={(e) =>
-                setUserData((prev) => ({ ...prev, full_name: e.target.value }))
-              }
-            />
-            {!userData.full_name && (
-              <div className="text-red-500 text-sm mt-2">Full Name is required</div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100 h-[600px]"> {/* Fixed height */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white">
+          <h1 className="text-3xl font-extrabold tracking-tight">KYC Verification</h1>
+          <p className="text-blue-100 mt-2">Complete your Know Your Customer process</p>
+        </div>
+        
+        <div className="p-6 h-[calc(100%-120px)] overflow-y-auto"> {/* Allow scrolling */}
+          {renderProgressBar()}
+          
+          <div>
+            {step === 1 && (
+              <PersonalInfo 
+                userData={userData} 
+                setUserData={setUserData} 
+                onNextStep={handleNextStep} 
+                errors={errors} 
+              />
             )}
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Email</label>
-            <input
-              type="email"
-              className="shadow border rounded w-full py-2 px-3"
-              value={userData.email || ''}
-              onChange={(e) =>
-                setUserData((prev) => ({ ...prev, email: e.target.value }))
-              }
-            />
-            {!userData.email && (
-              <div className="text-red-500 text-sm mt-2">Valid Email is required</div>
-            )}
-          </div>
-          <div className="flex justify-between mt-4">
-            <button
-              type="submit"
-              disabled={!userData.full_name || !userData.email}
-              className={`${
-                userData.full_name && userData.email
-                  ? 'bg-blue-500 hover:bg-blue-700 text-white'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              } py-2 px-4 rounded`}
-            >
-              Next
-            </button>
-          </div>
-        </form>
-      )}
 
-      {step === 2 && (
-        <form onSubmit={handleNextStep}>
-          <h2 className="text-lg font-bold mb-4">Step 2: Address Information</h2>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Country</label>
-            <select
-              className="shadow border rounded w-full py-2 px-3"
-              value={userData.country || ''}
-              onChange={(e) =>
-                setUserData((prev) => ({ ...prev, country: e.target.value }))
-              }
-            >
-              <option value="">Select a Country</option>
-              <option value="USA">USA</option>
-              <option value="Canada">Canada</option>
-              <option value="UK">UK</option>
-            </select>
-            {!userData.country && (
-              <div className="text-red-500 text-sm mt-2">Country is required</div>
+            {step === 2 && (
+              <AddressInfo 
+                userData={userData} 
+                setUserData={setUserData} 
+                onNextStep={handleNextStep} 
+                onPrevStep={handlePrevStep} 
+                errors={errors} 
+              />
             )}
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Address</label>
-            <input
-              type="text"
-              className="shadow border rounded w-full py-2 px-3"
-              value={userData.address || ''}
-              onChange={(e) =>
-                setUserData((prev) => ({ ...prev, address: e.target.value }))
-              }
-            />
-            {!userData.address && (
-              <div className="text-red-500 text-sm mt-2">Address is required</div>
+
+            {step === 3 && (
+              <DocumentUpload 
+                userData={userData} 
+                setUserData={setUserData} 
+                onNextStep={handleNextStep} 
+                onPrevStep={handlePrevStep} 
+                errors={errors} 
+              />
             )}
-          </div>
-          <div className="flex justify-between mt-4">
-            <button
-              type="button"
-              onClick={handlePrevStep}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded"
-            >
-              Previous
-            </button>
-            <button
-              type="submit"
-              disabled={!userData.country || !userData.address}
-              className={`${
-                userData.country && userData.address
-                  ? 'bg-blue-500 hover:bg-blue-700 text-white'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              } py-2 px-4 rounded`}
-            >
-              Next
-            </button>
-          </div>
-        </form>
-      )}
 
-{step === 3 && (
-  <form
-    onSubmit={(e) => {
-      e.preventDefault();
-      if (userData.identity_document) {
-        setStep(4);
-      }
-    }}
-  >
-    <h2 className="text-lg font-bold mb-4">Step 3: Document Upload</h2>
-    <div className="mb-4">
-      <label className="block text-gray-700 mb-2">Identity Document</label>
-      <div className="relative">
-        <input
-          type="file"
-          className="shadow border rounded w-full py-2 px-3"
-          onChange={(e) => {
-            if (e.target.files.length > 0) {
-              const file = e.target.files[0];
-              setUserData((prev) => ({
-                ...prev,
-                identity_document: file.name,
-              }));
-            } else {
-              setUserData((prev) => ({
-                ...prev,
-                identity_document: '',
-              }));
-            }
-          }}
-        />
-        {userData.identity_document && (
-          <p className="text-green-500 text-sm mt-2">File attached: {userData.identity_document}</p>
-        )}
-        {!userData.identity_document && (
-          <div className="text-red-500 text-sm mt-2">Please attach a file to proceed</div>
-        )}
-      </div>
-    </div>
-    <div className="flex justify-between mt-4">
-      <button
-        type="button"
-        onClick={handlePrevStep}
-        className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded"
-      >
-        Previous
-      </button>
-      <button
-        type="submit"
-        disabled={!userData.identity_document}
-        className={`${
-          userData.identity_document
-            ? 'bg-green-500 hover:bg-green-700 text-white'
-            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-        } py-2 px-4 rounded`}
-      >
-        Next
-      </button>
-    </div>
-  </form>
-)}
-
-      {step === 4 && (
-        <div className="p-6 bg-white shadow-md rounded">
-          <h2 className="text-lg font-bold mb-4">Summary and Review</h2>
-          <div className="mb-4">
-            <h3 className="font-bold text-gray-700">Personal Information</h3>
-            <p>
-              <strong>Full Name:</strong> {userData.full_name}
-            </p>
-            <p>
-              <strong>Email:</strong> {userData.email}
-            </p>
-          </div>
-          <div className="mb-4">
-            <h3 className="font-bold text-gray-700">Address Information</h3>
-            <p>
-              <strong>Country:</strong> {userData.country}
-            </p>
-            <p>
-              <strong>Address:</strong> {userData.address}
-            </p>
-          </div>
-          <div className="mb-4">
-            <h3 className="font-bold text-gray-700">Document Upload</h3>
-            <p>
-              <strong>Uploaded Document:</strong> {userData.identity_document}
-            </p>
-          </div>
-          <div className="flex justify-between mt-4">
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 mr-2 rounded"
-            >
-              Edit Personal Information
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 mr-2 rounded"
-            >
-              Edit Address Information
-            </button>
-            <button
-              type="button"
-              onClick={handleEditUploadsDoc}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded"
-            >
-              Edit Document Upload
-            </button>
-          </div>
-          <div className="mt-4">
-            <button
-              type="button"
-              onClick={() => alert('Form submitted successfully!')}
-              className="bg-green-500 hover:bg-green-700 text-white py-2 px-4 rounded"
-            >
-              Confirm and Submit
-            </button>
+            {step === 4 && (
+              <Summary 
+                userData={userData}
+                setUserData={setUserData}
+                setStep={setStep}
+                handleEditUploadsDoc={handleEditUploadsDoc}
+              />
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
